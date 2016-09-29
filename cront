@@ -1,0 +1,70 @@
+#!/bin/bash
+
+#
+#
+#
+
+myName=$(basename $0)
+myPath=$(dirname $(readlink -f $0))
+
+Records=$HOME/.tabs
+[[ -d $Records ]] || mkdir -p $Records
+
+Default=$Records/default.tab
+[[ -a $Default ]] || cat /etc/crontab > $Default
+
+Host=$HOSTNAME
+User=$USER
+NewTab=".config"
+
+while [[ $# -gt 0 ]]
+do
+    case "$1" in
+        -h | --host )
+        Host="$2"
+        shift
+        ;;
+        -u | --user )
+        User="$2"
+        shift
+        ;;
+        -n | --new )
+        NewTab="$2"
+        shift
+        ;;
+        --help )
+        echo "-h hostname, -u user, -n newtab"
+        exit
+        ;;
+        *)
+        ;;
+    esac
+    shift
+done
+
+echo ${Records}/${User}.${Host}
+ls ${Records}/${User}.${Host}.*
+
+NewTab=${Records}/${User}.${Host}.${NewTab}
+echo $NewTab
+[[ -a $NewTab ]] || cat $Default >> ${NewTab}
+
+MyTabs=$( ls ${Records}/${User}.${Host}.*
+MyCrontab=${Records}/${User}@${Host}.crontab
+
+$EDITOR $MyTabs
+
+echo > $MyCrontab
+for tab in $MyTabs
+do
+    cat $tab >> $MyCrontab
+    echo "" >> $MyCrontab
+done
+SSH=$(which ssh)
+if [[ $Host == $HOSTNAME ]]
+then
+    crontab $MyCrontab
+else
+    $SSH $User@$Host crontab $MyCrontab
+fi
+
